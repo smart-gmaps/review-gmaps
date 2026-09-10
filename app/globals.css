@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: #F3F4F6;
+  color: #111827;
+  -webkit-font-smoothing: antialiased;
+}
+
+.card-surface {
+  background: #FFFFFF;
+  border-radius: 20px;
+  box-shadow: 0 1px 3px rgba(17, 24, 39, 0.06), 0 8px 24px rgba(17, 24, 39, 0.06);
+}
+
+.btn-primary {
+  background: #2563EB;
+  color: #fff;
+  border-radius: 14px;
+  font-weight: 600;
+  padding: 0.85rem 1.25rem;
+  transition: background 0.15s ease;
+}
+
+.btn-primary:hover {
+  background: #1D4ED8;
+}
+
+.btn-primary:disabled {
+  background: #93C5FD;
+  cursor: not-allowed;
+}
+
+.input-field {
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  width: 100%;
+  font-size: 1rem;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
