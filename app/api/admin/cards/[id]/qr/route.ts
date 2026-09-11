@@ -21,7 +21,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     color: { dark: "#111827", light: "#FFFFFF" },
   });
 
-  return new NextResponse(png, {
+  return new NextResponse(new Uint8Array(png), {
     headers: {
       "Content-Type": "image/png",
       "Content-Disposition": `attachment; filename="qr-${card.public_code}.png"`,
