@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/require-admin";
 
-export async function GET() {
+export async function GET(req: Request) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -14,7 +14,7 @@ export async function GET() {
 
   if (error) return NextResponse.json({ error: "Gagal export" }, { status: 500 });
 
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const base = process.env.NEXT_PUBLIC_SITE_URL?.trim() || new URL(req.url).origin;
   const header = "public_code,qr_url,status,business_name,activated_at,created_at";
   const rows = (data ?? []).map((c) =>
     [c.public_code, `${base}/${c.public_code}`, c.status, c.business_name ?? "", c.activated_at ?? "", c.created_at]
