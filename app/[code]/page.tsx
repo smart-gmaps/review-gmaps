@@ -1,6 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { isAllowedGoogleTarget } from "@/lib/google-places";
+import { isAllowedGoogleTarget } from "@/lib/google-maps-link";
 import { logAudit } from "@/lib/audit";
 import ActivateCardClient from "./ActivateCardClient";
 

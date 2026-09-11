@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { searchSchema } from "@/lib/validators";
+import { mapsLinkSchema } from "@/lib/validators";
 import { verifyManagementSession } from "@/lib/session";
-import { searchBusiness } from "@/lib/google-places";
+import { resolveMapsLink } from "@/lib/google-maps-link";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/audit";
 
 export async function POST(req: Request, { params }: { params: { code: string } }) {
   const ip = getClientIp(req) ?? "unknown";
-  const rl = checkRateLimit(`search:${ip}`, 30, 10 * 60 * 1000);
+  const rl = checkRateLimit(`resolve-link:${ip}`, 30, 10 * 60 * 1000);
   if (!rl.allowed) {
-    return NextResponse.json({ error: "Terlalu banyak permintaan pencarian." }, { status: 429 });
+    return NextResponse.json({ error: "Terlalu banyak percobaan. Coba lagi nanti." }, { status: 429 });
   }
 
   const token = req.headers.get("cookie")?.match(new RegExp(`mgmt_${params.code}=([^;]+)`))?.[1];
@@ -25,15 +25,20 @@ export async function POST(req: Request, { params }: { params: { code: string } 
   }
 
   const body = await req.json().catch(() => null);
-  const parsed = searchSchema.safeParse(body);
+  const parsed = mapsLinkSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Kata kunci tidak valid" }, { status: 400 });
+    return NextResponse.json({ error: "Link tidak valid." }, { status: 400 });
   }
 
   try {
-    const results = await searchBusiness(parsed.data.query);
-    return NextResponse.json({ results });
+    const result = await resolveMapsLink(parsed.data.link);
+    return NextResponse.json({ result });
   } catch (e) {
-    return NextResponse.json({ error: "Gagal mencari bisnis. Coba lagi." }, { status: 502 });
+    const msg = e instanceof Error ? e.message : "";
+    const messages: Record<string, string> = {
+      BUKAN_LINK_GOOGLE_MAPS: "Link harus berasal dari Google Maps.",
+      CID_NOT_FOUND: "Tidak bisa membaca data bisnis dari link ini. Pastikan link diambil dari tombol 'Share' pada lokasi bisnis yang benar (bukan hasil pencarian umum), lalu coba lagi.",
+    };
+    return NextResponse.json({ error: messages[msg] ?? "Gagal memproses link. Coba lagi." }, { status: 400 });
   }
 }

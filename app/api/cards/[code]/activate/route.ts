@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { activateSchema } from "@/lib/validators";
 import { verifyManagementSession } from "@/lib/session";
-import { isAllowedGoogleTarget } from "@/lib/google-places";
+import { isAllowedGoogleTarget } from "@/lib/google-maps-link";
 import { logAudit, getClientIp } from "@/lib/audit";
 
 export async function POST(req: Request, { params }: { params: { code: string } }) {
@@ -30,9 +30,9 @@ export async function POST(req: Request, { params }: { params: { code: string } 
 
   const { data: ok, error } = await db.rpc("rpc_activate_card", {
     p_card_id: card.id,
-    p_business_id: d.placeId,
+    p_business_id: d.businessId,
     p_business_name: d.businessName,
-    p_business_address: d.businessAddress,
+    p_business_address: "",
     p_google_review_url: d.writeReviewUrl,
     p_google_maps_url: d.googleMapsUrl,
   });

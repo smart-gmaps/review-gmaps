@@ -4,14 +4,13 @@ export const pinSchema = z.object({
   pin: z.string().regex(/^\d{4,8}$/, "PIN harus 4-8 digit angka"),
 });
 
-export const searchSchema = z.object({
-  query: z.string().min(2).max(120),
+export const mapsLinkSchema = z.object({
+  link: z.string().min(5).max(2000),
 });
 
 export const activateSchema = z.object({
-  placeId: z.string().min(1),
+  businessId: z.string().min(1),
   businessName: z.string().min(1).max(200),
-  businessAddress: z.string().max(300).optional().default(""),
   googleMapsUrl: z.string().url(),
   writeReviewUrl: z.string().url(),
 });

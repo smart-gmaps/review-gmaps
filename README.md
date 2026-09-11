@@ -7,8 +7,11 @@ Implementasi MVP (prioritas P0) sesuai PRD, dibangun dengan Next.js 14
 
 - Public route `/{public_code}`: redirect otomatis jika kartu ACTIVE,
   halaman aktivasi jika UNINITIALIZED, halaman "tidak aktif" jika DISABLED.
-- Aktivasi kartu: verifikasi PIN → cari bisnis via Google Places →
-  konfirmasi → aktivasi atomik (anti race-condition).
+- Aktivasi kartu: verifikasi PIN → pemilik bisnis tempel link share
+  Google Maps miliknya sendiri → sistem membaca CID dari link tersebut
+  → konfirmasi → aktivasi atomik (anti race-condition). **Tidak
+  memakai Google Places API**, jadi tidak perlu akun Google Cloud /
+  kartu billing sama sekali.
 - PIN di-hash dengan bcrypt (via `pgcrypto` langsung di Postgres),
   tidak pernah plaintext di database.
 - Brute-force protection per-kartu: rate limit + lockout progresif,
@@ -51,16 +54,26 @@ menyiapkan ruang untuk sebagian ini.
    - `service_role` key → `SUPABASE_SERVICE_ROLE_KEY` (rahasia, jangan
      pernah expose ke client atau commit ke git)
 
-## 2. Setup Google Places API
+## 2. Cara kerja pengambilan link Google Maps (tanpa Google Cloud)
 
-1. Di [Google Cloud Console](https://console.cloud.google.com), buat/pilih project.
-2. Aktifkan **Places API (New)**.
-3. Buat API key, batasi (restrict) key tersebut:
-   - **Application restriction**: IP addresses (IP server Vercel) atau
-     API restriction saja jika IP dinamis.
-   - **API restriction**: hanya izinkan "Places API (New)".
-4. Simpan sebagai `GOOGLE_PLACES_API_KEY`. Key ini hanya dipakai di
-   server (`lib/google-places.ts`), tidak pernah dikirim ke browser.
+Tidak ada setup tambahan di langkah ini — tidak butuh akun Google Cloud
+atau API key apapun. Saat aktivasi, pemilik bisnis:
+
+1. Buka Google Maps, cari bisnisnya sendiri.
+2. Tap tombol **Share / Bagikan** → **Copy link**.
+3. Tempel link itu ke form aktivasi kartu.
+
+Server (`lib/google-maps-link.ts`) akan mengikuti redirect jika link
+berupa short link, lalu mengekstrak **CID** (Customer/Place ID numerik)
+yang ada di dalam URL Google Maps, dan menyusun link "Tulis Review"
+langsung darinya. Teknik ini memanfaatkan pola URL yang konsisten dari
+Google, tapi **tidak resmi didokumentasikan** — kalau suatu saat Google
+mengubah format URL-nya, ekstraksi ini bisa perlu disesuaikan (lihat
+komentar di `lib/google-maps-link.ts`).
+
+Kalau di kemudian hari ingin beralih ke Google Places API resmi
+(butuh Google Cloud + billing aktif), struktur kode sudah dipisah rapi
+di modul ini sehingga tinggal diganti tanpa menyentuh bagian lain.
 
 ## 3. Menjalankan secara lokal
 
@@ -94,8 +107,8 @@ Buka `http://localhost:3000`.
 - **Cetak QR**: klik tombol "QR" di baris kartu (dashboard) atau di hasil
   batch generate untuk mengunduh PNG siap cetak. Bisa juga pakai kolom
   `qr_url` pada CSV export dengan tool QR pilihan Anda sendiri.
-- **Pelanggan/kartu baru**: scan → `/{kode}` → masukkan PIN → cari
-  bisnis → konfirmasi → aktif.
+- **Pelanggan/kartu baru**: scan → `/{kode}` → masukkan PIN → tempel
+  link Google Maps bisnis → konfirmasi → aktif.
 - **Reset**: lewat `/manage` (pemegang kartu) atau dashboard admin.
 
 ## 6. Catatan penting sebelum production
@@ -128,13 +141,13 @@ app/
     login/
     dashboard/
   api/
-    cards/[code]/    # verify-pin, search-business, activate, reset, status
+    cards/[code]/    # verify-pin, resolve-link, activate, reset, status
     admin/           # generate, cards (list+aksi), export
 lib/
-  supabase/          # client admin (service role), server (auth), browser
-  session.ts         # management session
-  google-places.ts   # integrasi Places API
-  validators.ts       # skema zod
+  supabase/            # client admin (service role), server (auth), browser
+  session.ts           # management session
+  google-maps-link.ts  # ekstraksi CID dari link Google Maps (tanpa API)
+  validators.ts        # skema zod
   audit.ts, rate-limit.ts, require-admin.ts
 supabase/
   schema.sql         # tabel, RLS, function RPC atomik
