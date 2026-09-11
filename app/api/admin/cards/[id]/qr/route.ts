@@ -11,7 +11,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   const { data: card } = await db.from("cards").select("public_code").eq("id", params.id).single();
   if (!card) return NextResponse.json({ error: "Kartu tidak ditemukan" }, { status: 404 });
 
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin;
+  const base = process.env.NEXT_PUBLIC_SITE_URL?.trim() || new URL(req.url).origin;
   const url = `${base}/${card.public_code}`;
 
   const png = await QRCode.toBuffer(url, {
